@@ -4,8 +4,10 @@ import java.io.File
 
 
 object Utils {
-    
-    def listdir(path: String) : Array[String] = {
+    def listDir(path: String) : Array[String] = {
         return new File(path).listFiles.map(f => f.getPath())
+    }
+    def fileName(path: String) : String = {
+        return path.tail.split("/").last
     }
 }
