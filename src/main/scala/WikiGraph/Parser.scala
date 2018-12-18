@@ -4,9 +4,9 @@ import scala.util.matching.Regex
 
 
 object Parser {
-    val internalPattern = new Regex("\\[{2}[^\\]]*\\]{2}")
+    val internalPattern = "\\[{2}[^\\]]*\\]{2}".r
 
-    def findConnections(str: String) : Set[String] = {
-        return internalPattern.findAllIn(str).subgroups.toSet
+    def findConnections(str: String) : Array[String] = {
+        return internalPattern.findAllIn(str).toArray
     }
 }
