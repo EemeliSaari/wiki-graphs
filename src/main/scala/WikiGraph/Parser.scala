@@ -41,6 +41,7 @@ object Parser {
             case "" => default(2)   //":<text>:<text>"
             case "Kuva" => null     //Image
             case "Luokka" => null   //Class
+            case "File" => null     //File
             case x => default(1)    //Default
         }
     }
