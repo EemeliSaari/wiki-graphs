@@ -4,7 +4,7 @@ Small research project with Scala to analyse Wikipedia articles using [GraphX](h
 
 ## TODO
 
-- Load and parse connections from text file.
+- Parse the loaded articles from reference.
 - Map the connections to Graph.
 - Count number of connections for any given article.
 - Attempt naive approach to travelling salesman problem.
