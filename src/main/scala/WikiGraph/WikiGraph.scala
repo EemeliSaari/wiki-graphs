@@ -3,6 +3,9 @@ package WikiGraph
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Logger, Level}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions.col
 
 import Options._
 import Utils._
@@ -27,13 +30,37 @@ object WikiGraph extends App {
 
     val opt = Options(args.toList).argv()
 
-    println(opt("input_path"))
-    val paths : RDD[String] = sc.parallelize(listdir(opt("input_path")))
-    //paths.foreach(println)
-    val raw = spark.read.textFile("data/articles/291.txt")
-    println(raw.reduce(_ + _))
+    val nodes = spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("delimiter", ";")
+        .load(opt("reference_path"))
+        .select($"ns".alias("Id"), $"title".alias("Property"))
+        .as("nodes")
 
-    val conn : RDD[(String, Set[String])] = paths
-        .map(p => (p, findConnections(spark.read.textFile(p).reduce(_ + _))))
-    //conn.collect().foreach{case (name, set) => println(set)}
+    nodes.show()
+    val paths = sc.parallelize(listDir(opt("input_path"))).reduce(_ + "," + _)
+    val raw = sc.wholeTextFiles(paths)
+
+    val t1 = System.nanoTime
+
+    val parsed = raw
+        .map(x => (fileName(x._1).split("\\.")(0), findConnections(x._2)))
+    
+    val edges = parsed
+        .flatMap(pair => pair._2.map(value => (pair._1, value)))
+        .toDF(Seq("SrcId", "Property"): _*)
+        .as("edges")
+        .dropDuplicates()
+        .join(nodes, Seq("Property"), "inner")
+        .withColumnRenamed("Id", "DstId")
+        .select("SrcId", "DstId")
+
+    df2csv(edges, "edges.csv")
+
+    val duration = (System.nanoTime - t1) / 1e9d
+
+    println(duration)
+    edges.show()
+    dfShape(edges)
 }
