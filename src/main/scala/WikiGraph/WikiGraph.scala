@@ -10,6 +10,7 @@ import org.apache.spark.sql.functions.col
 import Options._
 import Utils._
 import Parser._
+import Connection._
 
 /**
  * Entrypoint for the software.
@@ -21,7 +22,7 @@ object WikiGraph extends App {
     val spark = SparkSession.builder()
         .appName("WikiGraph")
         .config("spark.driver.host", "localhost")
-        .master("local")
+        .master("local[*]")
         .getOrCreate()
 
     val sc = spark.sparkContext
@@ -45,8 +46,10 @@ object WikiGraph extends App {
     val t1 = System.nanoTime
 
     val parsed = raw
-        .map(x => (fileName(x._1).split("\\.")(0), findConnections(x._2)))
-    
+        .map(x => (fileName(x._1), findConnections(x._2)))
+
+    val duration = (System.nanoTime - t1) / 1e9d
+
     val edges = parsed
         .flatMap(pair => pair._2.map(value => (pair._1, value)))
         .toDF(Seq("SrcId", "Property"): _*)
@@ -56,9 +59,9 @@ object WikiGraph extends App {
         .withColumnRenamed("Id", "DstId")
         .select("SrcId", "DstId")
 
-    df2csv(edges, "edges.csv")
+    val graph = initializeGraph(nodes, edges)
 
-    val duration = (System.nanoTime - t1) / 1e9d
+    df2csv(edges, "edges.csv")
 
     println(duration)
     edges.show()
