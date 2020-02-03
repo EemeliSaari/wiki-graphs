@@ -6,13 +6,14 @@ import org.apache.spark.sql.{DataFrame, Row}
 
 object Utils {
     def listDir(path: String) : Array[String] = {
-        return new File(path).listFiles.map(f => f.getPath())
+        return new File(path).listFiles.filter(_.isFile).map(f => f.getPath())
     }
-    def fileName(path: String) : String = {
-        return path.tail.split("/").last.split("\\.")(0)
-    }
-    def df2csv(df:DataFrame, filename:String, delimiter:String = ",") : Unit = {
 
+    def parseFilename(path: String) : String = {
+        return path.split('.').head.split('\\').last
+    }
+
+    def df2csv(df:DataFrame, filename:String, delimiter:String = ",") : Unit = {
         val rows = df.rdd.map(_.toSeq.mkString(delimiter) + "\n")
 
         val file = new BufferedWriter(new FileWriter(filename))
@@ -22,9 +23,14 @@ object Utils {
         rows.collect.map(r => w.write(r))
         w.close
     }
+
     def dfShape(df:DataFrame) : Unit = {
         val rows = df.count()
         val cols = df.columns.size
         println("(" + rows + ", " + cols + ")")
+    }
+
+    def isCsv(path: String) : Boolean = {
+        return path.split("\\.")(1) == "csv"
     }
 }
