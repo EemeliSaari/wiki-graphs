@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.graphx.{Graph, Edge, VertexId}
 
 
-object Loader {
+object GraphLoaderX {
     val defaultConnection = ("Missing")
 
     def initializeGraph(edges:DataFrame, nodes:DataFrame) : Graph[String, String] = {
