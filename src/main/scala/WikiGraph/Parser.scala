@@ -7,22 +7,18 @@ import java.lang.{UnsupportedOperationException, ArrayIndexOutOfBoundsException,
 import java.nio.charset.UnmappableCharacterException
 
 
-object Parser {
+class PageParser() {
+    val ImageTag: String = "Image"
+    val ClassTag: String = "Class"
+    val FileTag: String = "File"
+
+    var classes: Array[String] = Array[String]()
+    var connections: Array[String] = Array[String]()
+
     val internalPattern = "\\[{2}([^\\]]*)\\]{2}".r
 
-    def connectionsFromFile(path: String) : Array[String] = {
-        try {
-            return connectionsFromString(Source.fromFile(path).mkString)
-        } catch {
-            case e: UnmappableCharacterException => {
-                println(s"Error with path: $path")
-                return Array[String]()
-            }
-        }
-    }
-
-    def connectionsFromString(str: String) : Array[String] = {
-        return internalPattern.findAllMatchIn(str)
+    def parse(text: String) : Unit = {
+        connections = internalPattern.findAllMatchIn(text)
             .map(_.group(1))
             .toArray
             .filter(parseSections)
@@ -87,11 +83,48 @@ object Parser {
             return str
 
         return parts(0) match {
-            case "" => default(2)   //":<text>:<text>"
-            case "Kuva" => null     //Image
-            case "Luokka" => null   //Class
-            case "File" => null     //File
-            case x => default(1)    //Default
+            case "" => default(2)                   //":<text>:<text>"
+            case ClassTag => handleClass(parts)     //Class
+            case ImageTag => null                   //Image
+            case FileTag => null                    //File
+            case x => default(1)                    //Default
         }
+    }
+
+    def handleClass(parts: Array[String]) : String = {
+        classes = classes :+ parts(1)
+        return null
+    }
+}
+
+
+class FinnishParser() extends PageParser() {
+    override val ImageTag: String = "Kuva"
+    override val ClassTag: String = "Luokka"
+}
+
+
+object Parser {
+    var idx = 0
+
+    def parserFromFile(path: String) : PageParser = {
+        val parser = new FinnishParser()
+
+        var text = ""
+        try {
+            text = Source.fromFile(path).mkString
+        } catch {
+            case e: UnmappableCharacterException => {
+                println(s"Error with path: $path")
+            }
+            return parser
+        }
+        parser.parse(text)
+
+        idx = idx + 1
+        if (idx % 100 == 0) {
+            println(idx)
+        }
+        return parser
     }
 }
